@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POSTÓJ — Zero podwójnych rezerwacji. Zero Excela. Jeden kemping.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --off-white:#F5F2EA;
+    --sand:#D8C9A8;
+    --warm-gray:#958D80;
+    --forest:#182620;
+    --graphite:#292926;
+    --terracotta:#BE4E28;
+    --line: rgba(41,41,38,0.14);
+    --line-strong: rgba(41,41,38,0.28);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--off-white);
+    color:var(--graphite);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3, .display{
+    font-family:'Space Grotesk', sans-serif;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  .mono{
+    font-family:'IBM Plex Mono', monospace;
+    letter-spacing:0.02em;
+  }
+  .wrap{
+    max-width:1120px;
+    margin:0 auto;
+    padding:0 32px;
+  }
+  a{color:inherit;}
+
+  /* ---------- Texture: faint grid, like paper + screen ---------- */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.5;
+    background-image:
+      radial-gradient(rgba(41,41,38,0.05) 0.6px, transparent 0.6px);
+    background-size: 14px 14px;
+  }
+
+  /* ---------- Nav ---------- */
+  header.nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(245,242,234,0.88);
+    backdrop-filter: blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 32px;
+    max-width:1120px; margin:0 auto;
+  }
+  .logo{
+    font-size:20px; font-weight:600;
+    display:flex; align-items:baseline; gap:2px;
+  }
+  .logo .o-mark{
+    color:var(--terracotta);
+  }
+  .nav-cta{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; text-transform:uppercase; letter-spacing:0.08em;
+    background:var(--forest); color:var(--off-white);
+    padding:11px 18px; border-radius:2px;
+    text-decoration:none; border:1px solid var(--forest);
+    transition:opacity 0.15s ease;
+  }
+  .nav-cta:hover{opacity:0.85;}
+
+  section{ position:relative; z-index:1; }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding:88px 0 64px;
+    display:grid; grid-template-columns: 1.05fr 0.95fr; gap:56px; align-items:center;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; text-transform:uppercase; letter-spacing:0.12em;
+    color:var(--terracotta); margin-bottom:18px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{
+    content:""; width:16px; height:1px; background:var(--terracotta);
+  }
+  .hero h1{
+    font-size:52px; line-height:1.05; font-weight:600; color:var(--forest);
+  }
+  .hero h1 .accent{ color:var(--terracotta); }
+  .hero .sub{
+    margin-top:22px; font-size:18px; line-height:1.55; color:var(--graphite);
+    max-width:46ch;
+  }
+  .hero-ctas{ margin-top:34px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .btn-primary{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px; text-transform:uppercase; letter-spacing:0.08em;
+    background:var(--terracotta); color:var(--off-white);
+    padding:15px 26px; border-radius:2px; text-decoration:none;
+    border:1px solid var(--terracotta);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+    display:inline-block;
+  }
+  .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 6px 18px rgba(190,78,40,0.28); }
+  .btn-text{
+    font-size:14px; color:var(--graphite); text-decoration:none;
+    border-bottom:1px solid var(--line-strong); padding-bottom:2px;
+  }
+
+  /* ---------- Signature element: the parcel grid ---------- */
+  .grid-card{
+    background:var(--forest);
+    border-radius:4px;
+    padding:22px;
+    position:relative;
+    box-shadow: 0 24px 60px rgba(24,38,32,0.28);
+  }
+  .grid-card-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:16px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    color:rgba(245,242,234,0.55);
+  }
+  .grid-card-head .status-dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--terracotta); margin-right:6px;
+    box-shadow:0 0 0 3px rgba(190,78,40,0.25);
+  }
+  .parcel-grid{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;
+  }
+  .parcel{
+    aspect-ratio:1/0.82;
+    border:1px solid rgba(245,242,234,0.18);
+    border-radius:2px;
+    display:flex; align-items:flex-end; justify-content:flex-start;
+    padding:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px; color:rgba(245,242,234,0.65);
+    background:rgba(245,242,234,0.03);
+    cursor:default;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    position:relative;
+  }
+  .parcel:hover{
+    background:rgba(245,242,234,0.09);
+    border-color:rgba(245,242,234,0.35);
+    color:var(--off-white);
+  }
+  .parcel.occupied{
+    background:var(--terracotta);
+    border-color:var(--terracotta);
+    color:var(--off-white);
+    font-weight:500;
+  }
+  .parcel .tip{
+    position:absolute; bottom:calc(100% + 8px); left:0;
+    background:var(--off-white); color:var(--forest);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:12px; line-height:1.4;
+    padding:8px 10px; border-radius:2px; width:168px;
+    opacity:0; transform:translateY(4px); pointer-events:none;
+    transition:opacity 0.15s ease, transform 0.15s ease;
+    box-shadow:0 8px 20px rgba(0,0,0,0.18);
+    z-index:5;
+  }
+  .parcel:hover .tip, .parcel.occupied .tip{ opacity:1; transform:translateY(0); }
+  .parcel.occupied .tip{ opacity:0; }
+  .parcel.occupied:hover .tip{ opacity:1; }
+  .grid-caption{
+    margin-top:16px; font-size:13px; color:rgba(245,242,234,0.7); line-height:1.5;
+  }
+  .grid-caption b{ color:var(--off-white); font-weight:500; }
+
+  /* ---------- Generic section rhythm ---------- */
+  .section{ padding:96px 0; border-top:1px solid var(--line); }
+  .section-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--warm-gray); margin-bottom:14px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .section-label .num{ color:var(--terracotta); }
+  .section h2{
+    font-size:34px; font-weight:600; color:var(--forest); line-height:1.2;
+    max-width:18ch;
+  }
+  .section .lead{
+    margin-top:18px; font-size:17px; line-height:1.6; color:var(--graphite);
+    max-width:60ch;
+  }
+
+  /* ---------- Problem ---------- */
+  .problem-quote{
+    margin-top:40px;
+    background:var(--sand);
+    border-left:3px solid var(--terracotta);
+    padding:28px 32px;
+    border-radius:2px;
+    font-size:19px; line-height:1.55; color:var(--forest);
+    max-width:62ch;
+  }
+  .chaos-row{
+    margin-top:36px; display:flex; flex-wrap:wrap; gap:12px;
+  }
+  .chaos-tag{
+    font-family:'IBM Plex Mono', monospace; font-size:12px;
+    color:var(--warm-gray); border:1px solid var(--line-strong);
+    padding:7px 12px; border-radius:20px; text-decoration:line-through;
+    text-decoration-color: var(--terracotta);
+  }
+
+  /* ---------- Solution ---------- */
+  .solution-grid{
+    margin-top:48px; display:grid; grid-template-columns: 1fr 1fr; gap:56px; align-items:center;
+  }
+  .compare{
+    display:flex; flex-direction:column; gap:14px;
+  }
+  .compare-row{
+    display:grid; grid-template-columns: 110px 1fr; gap:18px; align-items:center;
+    padding:14px 0; border-bottom:1px solid var(--line);
+  }
+  .compare-row .tag{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; text-transform:uppercase;
+    letter-spacing:0.06em; padding:5px 9px; border-radius:2px; text-align:center;
+  }
+  .compare-row .tag.no{ background:var(--sand); color:var(--warm-gray); }
+  .compare-row .tag.yes{ background:var(--forest); color:var(--off-white); }
+  .compare-row .desc{ font-size:14.5px; color:var(--graphite); line-height:1.5; }
+
+  .unit-visual{
+    background:var(--off-white); border:1px solid var(--line-strong); border-radius:4px;
+    padding:28px; text-align:center;
+  }
+  .unit-visual .parcela-num{
+    font-family:'IBM Plex Mono', monospace; font-size:64px; font-weight:500; color:var(--terracotta);
+    line-height:1;
+  }
+  .unit-visual .parcela-label{
+    margin-top:10px; font-size:13px; color:var(--warm-gray); font-family:'IBM Plex Mono', monospace;
+    text-transform:uppercase; letter-spacing:0.08em;
+  }
+  .unit-visual p{
+    margin-top:18px; font-size:14.5px; color:var(--graphite); line-height:1.55;
+  }
+
+  /* ---------- How it works ---------- */
+  .steps{
+    margin-top:48px; display:grid; grid-template-columns:repeat(3,1fr); gap:0;
+    border:1px solid var(--line-strong); border-radius:4px; overflow:hidden;
+  }
+  .step{
+    padding:32px 28px; background:var(--off-white); position:relative;
+  }
+  .step + .step{ border-left:1px solid var(--line-strong); }
+  .step .step-num{
+    font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--terracotta);
+  }
+  .step h3{ margin-top:14px; font-size:18px; font-weight:600; color:var(--forest); }
+  .step p{ margin-top:10px; font-size:14.5px; line-height:1.55; color:var(--graphite); }
+
+  /* ---------- Features ---------- */
+  .features{
+    margin-top:48px; display:grid; grid-template-columns:repeat(2,1fr); gap:1px;
+    background:var(--line-strong); border:1px solid var(--line-strong); border-radius:4px; overflow:hidden;
+  }
+  .feature{
+    background:var(--off-white); padding:30px 28px;
+  }
+  .feature .f-icon{
+    width:34px; height:34px; border:1px solid var(--line-strong); border-radius:2px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace; font-size:13px; color:var(--terracotta);
+    margin-bottom:16px;
+  }
+  .feature h3{ font-size:16px; font-weight:600; color:var(--forest); }
+  .feature p{ margin-top:8px; font-size:14px; line-height:1.5; color:var(--graphite); }
+
+  /* ---------- Demo ---------- */
+  .demo-frame{
+    margin-top:48px; background:var(--forest); border-radius:6px; padding:28px;
+  }
+  .demo-topbar{
+    display:flex; gap:6px; margin-bottom:20px;
+  }
+  .demo-topbar span{ width:9px; height:9px; border-radius:50%; background:rgba(245,242,234,0.2); }
+  .demo-body{
+    display:grid; grid-template-columns: 200px 1fr; gap:20px;
+  }
+  .demo-side{
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .demo-side .item{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; color:rgba(245,242,234,0.55);
+    padding:9px 10px; border-radius:2px;
+  }
+  .demo-side .item.active{ background:rgba(245,242,234,0.08); color:var(--off-white); }
+  .demo-grid{
+    display:grid; grid-template-columns:repeat(6,1fr); gap:6px;
+  }
+  .demo-cell{
+    aspect-ratio:1; border-radius:2px; background:rgba(245,242,234,0.05);
+    border:1px solid rgba(245,242,234,0.12);
+  }
+  .demo-cell.busy{ background:var(--terracotta); border-color:var(--terracotta); }
+  .demo-cell.pending{ background:var(--sand); border-color:var(--sand); }
+  .demo-caption{
+    margin-top:20px; font-size:13px; color:var(--warm-gray); line-height:1.5; text-align:center;
+  }
+
+  /* ---------- Pricing ---------- */
+  .pricing-note{
+    margin-top:14px; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    color:var(--warm-gray); text-transform:uppercase; letter-spacing:0.06em;
+  }
+  .plans{
+    margin-top:40px; display:grid; grid-template-columns:repeat(3,1fr); gap:20px;
+  }
+  .plan{
+    border:1px solid var(--line-strong); border-radius:4px; padding:30px 26px;
+    background:var(--off-white); display:flex; flex-direction:column;
+  }
+  .plan.featured{
+    background:var(--forest); border-color:var(--forest); color:var(--off-white);
+  }
+  .plan .plan-name{
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--terracotta);
+  }
+  .plan.featured .plan-name{ color:#E08A67; }
+  .plan .plan-price{
+    margin-top:14px; font-family:'Space Grotesk', sans-serif; font-size:36px; font-weight:600;
+  }
+  .plan .plan-price span{ font-size:14px; font-weight:400; font-family:'IBM Plex Sans', sans-serif; color:var(--warm-gray); }
+  .plan.featured .plan-price span{ color:rgba(245,242,234,0.55); }
+  .plan .plan-for{
+    margin-top:8px; font-size:13px; color:var(--warm-gray);
+  }
+  .plan.featured .plan-for{ color:rgba(245,242,234,0.6); }
+  .plan ul{ list-style:none; padding:0; margin:22px 0 0; display:flex; flex-direction:column; gap:10px; flex:1; }
+  .plan li{
+    font-size:13.5px; line-height:1.4; padding-left:16px; position:relative; color:var(--graphite);
+  }
+  .plan.featured li{ color:rgba(245,242,234,0.85); }
+  .plan li::before{
+    content:"—"; position:absolute; left:0; color:var(--terracotta);
+  }
+  .plan .plan-cta{
+    margin-top:24px; text-align:center; padding:12px; border-radius:2px;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; text-transform:uppercase; letter-spacing:0.06em;
+    border:1px solid var(--forest); text-decoration:none; color:var(--forest);
+  }
+  .plan.featured .plan-cta{
+    background:var(--terracotta); border-color:var(--terracotta); color:var(--off-white);
+  }
+
+  /* ---------- FAQ ---------- */
+  .faq{ margin-top:40px; max-width:74ch; }
+  .faq-item{ border-bottom:1px solid var(--line); }
+  .faq-q{
+    padding:22px 0; display:flex; justify-content:space-between; align-items:center;
+    cursor:pointer; font-size:16px; font-weight:500; color:var(--forest);
+  }
+  .faq-q .mark{ font-family:'IBM Plex Mono', monospace; color:var(--terracotta); font-size:18px; transition:transform 0.15s ease; }
+  .faq-item.open .mark{ transform:rotate(45deg); }
+  .faq-a{
+    max-height:0; overflow:hidden; transition:max-height 0.2s ease;
+    font-size:14.5px; color:var(--graphite); line-height:1.6;
+  }
+  .faq-item.open .faq-a{ max-height:200px; }
+  .faq-a-inner{ padding-bottom:22px; max-width:60ch; }
+
+  /* ---------- Final CTA ---------- */
+  .final-cta{
+    background:var(--forest); color:var(--off-white); text-align:center;
+    padding:100px 0;
+  }
+  .final-cta h2{ color:var(--off-white); max-width:20ch; margin:0 auto; }
+  .final-cta .sub{ margin-top:16px; color:rgba(245,242,234,0.68); font-size:16px; }
+  .final-cta .btn-primary{ margin-top:32px; font-size:14px; padding:17px 32px; }
+
+  footer{
+    padding:32px 0 40px; text-align:center;
+    font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--warm-gray);
+  }
+
+  @media (max-width: 860px){
+    .hero{ grid-template-columns:1fr; padding-top:56px; }
+    .hero h1{ font-size:36px; }
+    .solution-grid{ grid-template-columns:1fr; }
+    .steps{ grid-template-columns:1fr; }
+    .step + .step{ border-left:none; border-top:1px solid var(--line-strong); }
+    .features{ grid-template-columns:1fr; }
+    .plans{ grid-template-columns:1fr; }
+    .demo-body{ grid-template-columns:1fr; }
+    .demo-side{ flex-direction:row; overflow-x:auto; }
+    .section h2{ font-size:26px; }
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="nav">
+  <div class="nav-inner">
+    <div class="logo">POST<span class="o-mark">Ó</span>J</div>
+    <a href="#cta" class="nav-cta">Umów demo</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap" style="display:contents;">
+    <div>
+      <div class="eyebrow">System rezerwacji dla kempingów</div>
+      <h1>Zero podwójnych rezerwacji.<br>Zero Excela.<br><span class="accent">Jeden kemping.</span></h1>
+      <p class="sub">System zaprojektowany dla parcel, nie dla pokoi — bo Twój kemping to nie hotel.</p>
+      <div class="hero-ctas">
+        <a href="#cta" class="btn-primary">Umów demo</a>
+        <a href="#jak-dziala" class="btn-text">Zobacz, jak to działa ↓</a>
+      </div>
+    </div>
+    <div class="grid-card">
+      <div class="grid-card-head">
+        <span><span class="status-dot"></span>Mapa parcel — dziś</span>
+        <span>12 / 16 wolnych</span>
+      </div>
+      <div class="parcel-grid" id="parcelGrid"></div>
+      <div class="grid-caption"><b>Parcela 12</b> jest zajęta. System wie o tym pierwszy.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="problem">
+  <div class="wrap">
+    <div class="section-label"><span class="num">01</span> Problem</div>
+    <h2>Znasz to uczucie.</h2>
+    <div class="problem-quote">
+      Telefon dzwoni, gość czeka, a Ty sprawdzasz w zeszycie, czy parcela 12 jest wolna.
+    </div>
+    <div class="chaos-row">
+      <span class="chaos-tag">Excel</span>
+      <span class="chaos-tag">kartka</span>
+      <span class="chaos-tag">telefon</span>
+      <span class="chaos-tag">„chyba wolne?"</span>
+      <span class="chaos-tag">podwójna rezerwacja</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="solution">
+  <div class="wrap">
+    <div class="section-label"><span class="num">02</span> Rozwiązanie</div>
+    <h2>Parcela, nie pokój, jest sercem systemu.</h2>
+    <p class="lead">Zbudowany od zera dla kempingów — nie doklejony hotelowy PMS. Kemping rozlicza osobno miejsce, pojazd, prąd i gościa. POSTÓJ liczy tak samo, jak Ty liczysz dziś.</p>
+    <div class="solution-grid">
+      <div class="compare">
+        <div class="compare-row">
+          <span class="tag no">Hotel</span>
+          <span class="desc">Jednostka = pokój × noc. Jeden gość, jedna opłata, koniec tematu.</span>
+        </div>
+        <div class="compare-row">
+          <span class="tag yes">POSTÓJ</span>
+          <span class="desc">Jednostka = parcela. Osobno miejsce, pojazd, prąd, zwierzę i opłata miejscowa.</span>
+        </div>
+        <div class="compare-row">
+          <span class="tag no">Hotel</span>
+          <span class="desc">Kalendarz pokoi, bez pojęcia „parceli aktywnej".</span>
+        </div>
+        <div class="compare-row">
+          <span class="tag yes">POSTÓJ</span>
+          <span class="desc">Kalendarz w czasie rzeczywistym — jedna parcela, jedna rezerwacja, zawsze.</span>
+        </div>
+      </div>
+      <div class="unit-visual">
+        <div class="parcela-num">12</div>
+        <div class="parcela-label">Parcela aktywna</div>
+        <p>Wiesz, co jest wolne — zanim odbierzesz telefon.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="jak-dziala">
+  <div class="wrap">
+    <div class="section-label"><span class="num">03</span> Jak działa</div>
+    <h2>Trzy kroki, nie wdrożenie.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num mono">01</div>
+        <h3>Dodajesz kemping</h3>
+        <p>Wpisujesz parcele, ceny i zasady — dokładnie takie, jakich dziś używasz.</p>
+      </div>
+      <div class="step">
+        <div class="step-num mono">02</div>
+        <h3>My migrujemy dane</h3>
+        <p>Przenosimy Twoje rezerwacje z Excela w jeden dzień, nie w miesiąc. Nic nie ginie.</p>
+      </div>
+      <div class="step">
+        <div class="step-num mono">03</div>
+        <h3>Przyjmujesz pierwszą rezerwację</h3>
+        <p>System sam pilnuje, żeby żadna parcela nie trafiła do dwóch rodzin naraz.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="funkcje">
+  <div class="wrap">
+    <div class="section-label"><span class="num">04</span> Funkcje</div>
+    <h2>To, czego naprawdę potrzebujesz.</h2>
+    <div class="features">
+      <div class="feature">
+        <div class="f-icon mono">[ ]</div>
+        <h3>Mapa parcel</h3>
+        <p>Widzisz cały kemping na jednym ekranie — kto przyjeżdża, kto wyjeżdża, co jest wolne.</p>
+      </div>
+      <div class="feature">
+        <div class="f-icon mono">01</div>
+        <h3>Kalendarz w czasie rzeczywistym</h3>
+        <p>Jedna parcela = jedna rezerwacja. System sprawdza dostępność, zanim potwierdzisz.</p>
+      </div>
+      <div class="feature">
+        <div class="f-icon mono">zł</div>
+        <h3>Kalkulator opłat</h3>
+        <p>Miejsce, pojazd, prąd, zwierzę, opłata miejscowa — liczone automatycznie, wg Twojego cennika.</p>
+      </div>
+      <div class="feature">
+        <div class="f-icon mono">↻</div>
+        <h3>Migracja z Excela</h3>
+        <p>Pomagamy przenieść dane, które już masz — nie zaczynasz od zera.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="demo">
+  <div class="wrap">
+    <div class="section-label"><span class="num">05</span> Podgląd</div>
+    <h2>Zobacz, jak wygląda Twój kemping w systemie.</h2>
+    <div class="demo-frame">
+      <div class="demo-topbar"><span></span><span></span><span></span></div>
+      <div class="demo-body">
+        <div class="demo-side">
+          <div class="item active">Mapa parcel</div>
+          <div class="item">Kalendarz</div>
+          <div class="item">Rezerwacje</div>
+          <div class="item">Goście</div>
+          <div class="item">Cennik</div>
+        </div>
+        <div class="demo-grid" id="demoGrid"></div>
+      </div>
+      <div class="demo-caption">Terakota = zajęte · Piasek = rezerwacja oczekująca · Puste pole = wolne</div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="cennik">
+  <div class="wrap">
+    <div class="section-label"><span class="num">06</span> Cennik</div>
+    <h2>Prosto, bez „zadzwoń po wycenę".</h2>
+    <p class="pricing-note">Ceny sezonu pilotażowego — bez ukrywania za formularzem</p>
+    <div class="plans">
+      <div class="plan">
+        <div class="plan-name">Solo</div>
+        <div class="plan-price">129 zł<span>/mies.</span></div>
+        <div class="plan-for">Dla obiektów do 20–30 parcel</div>
+        <ul>
+          <li>Kalendarz bez podwójnych rezerwacji</li>
+          <li>Mapa parcel</li>
+          <li>Kalkulator opłat</li>
+          <li>Migracja z Excela w cenie</li>
+        </ul>
+        <a href="#cta" class="plan-cta">Umów demo</a>
+      </div>
+      <div class="plan featured">
+        <div class="plan-name">Standard</div>
+        <div class="plan-price">249 zł<span>/mies.</span></div>
+        <div class="plan-for">Dla obiektów do 60 parcel, z personelem sezonowym</div>
+        <ul>
+          <li>Wszystko z planu Solo</li>
+          <li>Wiele kont użytkowników</li>
+          <li>Raporty sezonowe</li>
+          <li>Priorytetowe wsparcie</li>
+        </ul>
+        <a href="#cta" class="plan-cta">Umów demo</a>
+      </div>
+      <div class="plan">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">399 zł<span>/mies.</span></div>
+        <div class="plan-for">Dla dużych, certyfikowanych obiektów</div>
+        <ul>
+          <li>Wszystko z planu Standard</li>
+          <li>Integracje (w rozwoju)</li>
+          <li>Rozszerzone raportowanie</li>
+          <li>Opiekun wdrożenia</li>
+        </ul>
+        <a href="#cta" class="plan-cta">Umów demo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="faq">
+  <div class="wrap">
+    <div class="section-label"><span class="num">07</span> FAQ</div>
+    <h2>Pytania, które i tak zadasz.</h2>
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q">Co z moimi danymi z Excela?<span class="mark">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Migrujemy je ręcznie, razem z Tobą, zanim zaczniesz korzystać z systemu na poważnie. Nic z tego, co już masz, nie ginie.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Co jeśli internet padnie w sezonie?<span class="mark">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Kluczowe dane rezerwacji widzisz też offline na urządzeniu, na którym ostatnio pracowałeś. Gdy internet wraca, system synchronizuje się sam.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Czy muszę umieć obsługiwać komputer, żeby to ogarnąć?<span class="mark">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Nie. Podczas demo pokazujemy system na Twoim realnym cenniku i parcelach — uczysz się na żywo, nie z instrukcji.</div></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Ile trwa wdrożenie?<span class="mark">+</span></div>
+        <div class="faq-a"><div class="faq-a-inner">Konfiguracja kempingu i migracja danych zajmuje zwykle jeden dzień roboczy, nie tygodnie.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta" id="cta">
+  <div class="wrap">
+    <div class="section-label" style="justify-content:center; color:rgba(245,242,234,0.55);"><span class="num" style="color:#E08A67;">08</span> Umów demo</div>
+    <h2>Zobacz, jak wygląda Twój kemping w systemie.</h2>
+    <p class="sub">30 minut rozmowy, na Twoim realnym cenniku i parcelach. Bez zobowiązań.</p>
+    <a href="mailto:kontakt@postoj.pl" class="btn-primary">Umów demo →</a>
+  </div>
+</section>
+
+<footer>
+  POSTÓJ — spokój po chaosie · system rezerwacji dla kempingów
+</footer>
+
+<script>
+  // Hero signature grid: 16 parcels, one occupied
+  const heroGrid = document.getElementById('parcelGrid');
+  const heroLabels = ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16'];
+  heroLabels.forEach((n) => {
+    const cell = document.createElement('div');
+    cell.className = 'parcel' + (n === '12' ? ' occupied' : '');
+    cell.innerHTML = n + (n === '12'
+      ? '<div class="tip">Zajęta do 18.08 — system zablokował ją dla innych rezerwacji.</div>'
+      : '<div class="tip">Wolna — gotowa do rezerwacji online.</div>');
+    heroGrid.appendChild(cell);
+  });
+
+  // Demo grid: 24 cells with mixed states
+  const demoGrid = document.getElementById('demoGrid');
+  const demoStates = ['','','busy','','pending','','','busy','','','','pending','','busy','','','','','pending','','busy','','',''];
+  demoStates.forEach((state) => {
+    const cell = document.createElement('div');
+    cell.className = 'demo-cell' + (state ? ' ' + state : '');
+    demoGrid.appendChild(cell);
+  });
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-item').forEach((item) => {
+    item.querySelector('.faq-q').addEventListener('click', () => {
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+</script>
+
+</body>
+</html>
